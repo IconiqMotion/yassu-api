@@ -2,27 +2,32 @@ import {Service} from "typedi";
 import getConfig from "../../config/env.config";
 const axios = require('axios');
 
+const SMS4FREE_ENDPOINT = 'https://api.sms4free.co.il/ApiSMS/v2/SendSMS';
+
 @Service()
 export class SmsService {
-	private readonly api: any;
 	private config = getConfig();
 
-	sendSms(to: string, text: string, senderName: string = getConfig().smsAuth.senderName) {
+	async sendSms(to: string, text: string, senderName: string = getConfig().smsAuth.senderName) {
 		console.log('sending sms to ' + to);
-		const xmlBody = `<Inforu><User><Username>${this.config.smsAuth.inforukey}</Username><Password>${this.config.smsAuth.inforutoken}</Password></User><Content Type="sms"><Message>${text}</Message></Content><Recipients><PhoneNumber>${to}</PhoneNumber></Recipients><Settings><Sender>${senderName}</Sender></Settings></Inforu>`;
-		console.log(this.config.smsAuth.endpoint + xmlBody);
-		axios.post(encodeURI(this.config.smsAuth.endpoint + xmlBody))
-			.then(function (response) {
-				if (response.status == 200) {
-					console.log('sms sent successfully to number - ' + to);
-				} else {
-					console.log('failed to sent to number - ' + to);
-				}
-			})
-			.catch(function (error) {
-				console.log('error in sending sms to number - ' + to + ' - ' + error);
+		const { sms4freeKey, sms4freeUser, sms4freePass } = this.config.smsAuth;
+		try {
+			const response = await axios.post(SMS4FREE_ENDPOINT, {
+				key: sms4freeKey,
+				user: sms4freeUser,
+				pass: sms4freePass,
+				sender: senderName,
+				recipient: to,
+				msg: text,
 			});
-
+			if (response.data > 0) {
+				console.log('sms sent successfully to number - ' + to);
+			} else {
+				console.log('failed to send sms to number - ' + to + ' - error code: ' + response.data);
+			}
+		} catch (error) {
+			console.log('error in sending sms to number - ' + to + ' - ' + error);
+		}
 	}
 
 	sendWhatsappMessage(phone: string, text: string) {

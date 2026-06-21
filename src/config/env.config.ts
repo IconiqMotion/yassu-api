@@ -93,6 +93,9 @@ export interface IConfig {
 		inforutoken: string;
 		token: string;
 		endpoint: string;
+		sms4freeKey: string;
+		sms4freeUser: string;
+		sms4freePass: string;
 	};
 	logzio: {
 		token: string;
@@ -167,6 +170,12 @@ const init = () => {
 	// SMS (smsAuth)
 	if (process.env.SMS_KEY) (config.smsAuth = config.smsAuth || {}).key = process.env.SMS_KEY;
 	if (process.env.SMS_TOKEN) (config.smsAuth = config.smsAuth || {}).token = process.env.SMS_TOKEN;
+
+	// sms4free
+	if (process.env.SMS4FREE_KEY) (config.smsAuth = config.smsAuth || {}).sms4freeKey = process.env.SMS4FREE_KEY;
+	if (process.env.SMS4FREE_USER) (config.smsAuth = config.smsAuth || {}).sms4freeUser = process.env.SMS4FREE_USER;
+	if (process.env.SMS4FREE_PASS) (config.smsAuth = config.smsAuth || {}).sms4freePass = process.env.SMS4FREE_PASS;
+	if (process.env.SMS4FREE_SENDER) (config.smsAuth = config.smsAuth || {}).senderName = process.env.SMS4FREE_SENDER;
 
 	return Object.assign(config, constants);
 };
