@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <title>Yassu Credit Card Page</title>
+
+    <link href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <script src="https://cdn.paymeservice.com/hf/v1/hostedfields.js"></script>
+
+    <style>
+        body {
+            background-color: #F9F3FF !important;
+        }
+
+        .panel {
+            background-color: #F9F3FF !important;
+        }
+
+        .panel-default {
+            border: 0 !important;
+        }
+
+        .btn-success {
+            background: linear-gradient(90deg, rgba(102,0,204,1) 0%, rgba(102,0,204,1) 25%, rgba(244,3,129,1) 50%, rgba(244,3,129,1) 75%) !important;
+            border: 0 !important;
+            border-radius: 40px !important;
+        }
+
+        .panel {
+            box-shadow: none !important;
+        }
+
+        .input-group .form-control:last-child, .input-group-addon:last-child, .input-group-btn:first-child>.btn-group:not(:first-child)>.btn, .input-group-btn:first-child>.btn:not(:first-child), .input-group-btn:last-child>.btn, .input-group-btn:last-child>.btn-group>.btn, .input-group-btn:last-child>.dropdown-toggle {
+            border-top-right-radius: 0 !important;
+            border-bottom-right-radius: 0 !important;
+            border-top-left-radius: 6px !important;
+            border-bottom-left-radius: 6px !important;
+        }
+
+        .input-group-addon:last-child {
+            border-left: 6px !important;
+            border-right: 0 !important;
+        }
+
+        .input-group .form-control:first-child, .input-group-addon:first-child, .input-group-btn:first-child>.btn, .input-group-btn:first-child>.btn-group>.btn, .input-group-btn:first-child>.dropdown-toggle, .input-group-btn:last-child>.btn-group:not(:last-child)>.btn, .input-group-btn:last-child>.btn:not(:last-child):not(.dropdown-toggle) {
+            border-top-left-radius: 0 !important;
+            border-bottom-left-radius: 0 !important;
+            border-top-right-radius: 6px !important;
+            border-bottom-right-radius: 6px !important;
+        }
+
+        .btn-lg {
+            padding: 12px 16px !important;
+            font-size: 16px !important;
+        }
+
+    </style>
+
+</head>
+
+<body>
+<div class="container">
+    <div class="row">
+        <div class="col-xs-12 col-sm-8 col-sm-offset-2">
+            <!-- CREDIT CARD FORM STARTS HERE -->
+            <div class="panel panel-default credit-card-box">
+                <div class="panel-body">
+                    <form role="form" id="checkout-form">
+
+                        <div class="row">
+                            <div class="col-xs-12">
+                                <div class="form-group" id="card-number-group">
+                                    <label for="card-number-container" class="control-label">מספר כרטיס</label>
+                                    <div class="input-group input-group-lg">
+                                        <div id="card-number-container" class="form-control input-lg"></div>
+                                        <span class="input-group-addon"><i class="fa fa-credit-card" id="card-provider"></i></span>
+                                    </div>
+                                    <p id="card-number-messages" class="help-block" style="display: none;"></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-xs-12">
+                                <div class="form-group" id="social-id-group">
+                                    <label for="social-id-container" class="control-label">תעודת זהות</label>
+                                    <div id="social-id-container" class="form-control input-lg"></div>
+                                    <p id="social-id-messages" class="help-block" style="display: none;"></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-xs-8">
+                                <div class="form-group" id="card-expiration-group">
+                                    <label for="card-expiration-container" class="control-label">תוקף</label>
+                                    <div id="card-expiration-container" class="form-control input-lg"></div>
+                                    <p id="card-expiration-messages" class="help-block" style="display: none;"></p>
+                                </div>
+                            </div>
+                            <div class="col-xs-4 col-md-4">
+                                <div class="form-group" id="card-cvv-group">
+                                    <label for="card-cvv-container" class="control-label">CVV</label>
+                                    <div id="card-cvv-container" class="form-control input-lg"></div>
+                                    <p id="card-cvv-messages" class="help-block" style="display: none;"></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-xs-6 col-md-6">
+                                <div class="form-group" id="first-name-group">
+                                    <label for="first-name-container" class="control-label">שם פרטי</label>
+                                    <div id="first-name-container" class="form-control input-lg"></div>
+                                    <p id="first-name-messages" class="help-block" style="display: none;"></p>
+                                </div>
+                            </div>
+                            <div class="col-xs-6 col-md-6">
+                                <div class="form-group" id="last-name-group">
+                                    <label for="last-name-container" class="control-label">שם משפחה</label>
+                                    <div id="last-name-container" class="form-control input-lg"></div>
+                                    <p id="last-name-messages" class="help-block" style="display: none;"></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row" style="margin-top: 25px;">
+                            <div class="col-xs-12">
+                                <button class="subscribe btn btn-success btn-lg btn-block" id="submit-button" disabled>
+                                    שמור
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="row" style="display:none;" id="checkout-form-errors">
+                            <div class="col-xs-12">
+                                <p class="payment-errors"></p>
+                            </div>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+            <!-- CREDIT CARD FORM ENDS HERE -->
+        </div>
+    </div>
+</div>
+
+<pre id="console-pre" style="display: none"></pre>
+<script>
+    // HELPERS ---------------------------------------------------------------------------------
+
+    const apiKey = '1b3582b9-45f0-4862-96b3-5e15d817a68b';
+
+    const consolePre = document.getElementById('console-pre');
+    const form = document.getElementById('checkout-form');
+    const cardProvider = document.getElementById('card-provider');
+
+    const numberGroup = document.getElementById('card-number-group');
+    const numberMessages = document.getElementById('card-number-messages');
+
+    const expirationGroup = document.getElementById('card-expiration-group');
+    const expirationMessages = document.getElementById('card-expiration-messages');
+
+    const cvcGroup = document.getElementById('card-cvv-group');
+    const cvcMessages = document.getElementById('card-cvv-messages');
+
+    const firstNameGroup = document.getElementById('first-name-group');
+    const firstNameMessages = document.getElementById('first-name-messages');
+
+    const lastNameGroup = document.getElementById('last-name-group');
+    const lastNameMessages = document.getElementById('last-name-messages');
+
+    // -----------------------------------------------------------------------------------------------------------------
+
+    const submitButton = document.getElementById('submit-button');
+    if (submitButton)
+        submitButton.disabled = true;
+
+    function tokenizationStarted() {
+        submitButton.disabled = true;
+        console.log('Tokenization started!');
+    }
+
+    function tokenizationFinished() {
+        submitButton.disabled = false;
+        console.log('Tokenization finished!');
+    }
+
+    function toggleValidationMessages(wrapper, ev) {
+        if (ev.isValid) {
+            this.style.display = 'none';
+            wrapper.classList.remove('has-error');
+        } else {
+            this.innerText = ev.message;
+            this.style.display = 'block';
+            wrapper.classList.add('has-error');
+        }
+    }
+
+    function changeCardProviderIcon(cardVendor) {
+
+        const vendorsToClasses = {
+            'unknown': ['fa', 'fa-credit-card'],
+            'amex': ['fa', 'fa-cc-amex'],
+            'diners': ['fa', 'fa-cc-diners-club'],
+            'jcb': ['fa', 'fa-cc-jcb'],
+            'visa': ['fa', 'fa-cc-visa'],
+            'mastercard': ['fa', 'fa-cc-mastercard'],
+            'discover': ['fa', 'fa-cc-discover'],
+        };
+
+        cardProvider.classList.remove(...cardProvider.classList);
+        cardProvider.classList.add(...(vendorsToClasses[cardVendor] ? vendorsToClasses[cardVendor] : vendorsToClasses['unknown']));
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+
+    const allFieldsReady = [];
+
+    PayMe.create(apiKey, {
+        testMode: true
+    }).then((instance) => {
+
+        const fields = instance.hostedFields();
+
+        const DEFAULT_SETTINGS = {
+            styles: {
+                base: {
+                    'font-size': '16px',
+                    '::placeholder': {'color': '#ACD7E4'},
+                    'text-align': 'right'
+                },
+                invalid: {
+                    'color': '#FF0000',
+                },
+                valid: {
+                    'color': '#F1416CE5',
+                },
+            }
+        };
+
+        const cardNumberSettings = {
+            placeholder: 'מספר כרטיס אשראי',
+            messages: {
+                invalid: 'מספר כרטיס אשראי לא תקין',
+                required: 'שדה מספר כרטיס אשראי הינו חובה'
+            },
+            ...DEFAULT_SETTINGS
+        };
+        const cardNumber = fields.create(PayMe.fields.NUMBER, cardNumberSettings);
+        allFieldsReady.push(
+            cardNumber.mount('#card-number-container')
+        );
+        cardNumber.on('card-type-changed', ev => changeCardProviderIcon(ev.cardType));
+        cardNumber.on('keyup', toggleValidationMessages.bind(numberMessages, numberGroup));
+
+        const expiration = fields.create(PayMe.fields.EXPIRATION, {
+            messages: {
+                invalid: 'כרטיס פג תוקף',
+                required: 'שדה תוקף הינו חובה'
+            },
+            ...DEFAULT_SETTINGS
+        });
+        allFieldsReady.push(
+            expiration.mount('#card-expiration-container')
+        );
+        expiration.on('keyup', toggleValidationMessages.bind(expirationMessages, expirationGroup));
+        expiration.on('validity-changed', toggleValidationMessages.bind(expirationMessages, expirationGroup));
+
+        const cvc = fields.create(PayMe.fields.CVC, {
+            placeholder: 'CVV',
+            messages: {
+                invalid: 'CVV לא תקין',
+                required: 'שדה CVV הינו חובה'
+            },
+            ...DEFAULT_SETTINGS
+        });
+        allFieldsReady.push(
+            cvc.mount('#card-cvv-container')
+        );
+        cvc.on('keyup', toggleValidationMessages.bind(cvcMessages, cvcGroup));
+        cvc.on('validity-changed', toggleValidationMessages.bind(cvcMessages, cvcGroup));
+
+        const firstName = fields.create(PayMe.fields.NAME_FIRST, {
+            placeholder: 'שם פרטי',
+            messages: {
+                invalid: 'שדה שם פרטי חייב להכיל אותיות בלבד',
+                required: 'שדה שם פרטי הינו חובה'
+            },
+            ...DEFAULT_SETTINGS
+        });
+        allFieldsReady.push(
+            firstName.mount('#first-name-container')
+        );
+        firstName.on('keyup', toggleValidationMessages.bind(firstNameMessages, firstNameGroup));
+        firstName.on('validity-changed', toggleValidationMessages.bind(firstNameMessages, firstNameGroup));
+
+        const lastName = fields.create(PayMe.fields.NAME_LAST, {
+            placeholder: 'שם משפחה',
+            messages: {
+                invalid: 'שדה שם משפחה חייב להכיל אותיות בלבד',
+                required: 'שדה שם משפחה הינו חובה'
+            },
+            ...DEFAULT_SETTINGS
+        });
+        allFieldsReady.push(
+            lastName.mount('#last-name-container')
+        );
+        lastName.on('keyup', toggleValidationMessages.bind(lastNameMessages, lastNameGroup));
+        lastName.on('validity-changed', toggleValidationMessages.bind(lastNameMessages, lastNameGroup));
+
+        const socialId = fields.create(PayMe.fields.SOCIAL_ID, {
+            placeholder: 'תעודת זהות',
+            messages: {
+                invalid: 'תעודת זהות לא תקינה',
+                required: 'שדה תעודת זהות הינו חובה'
+            },
+            ...DEFAULT_SETTINGS
+        });
+        allFieldsReady.push(
+            socialId.mount('#social-id-container')
+        );
+        // socialId.on('keyup', toggleValidationMessages.bind(socialIdMessages, socialIdGroup));
+        // socialId.on('validity-changed', toggleValidationMessages.bind(socialIdMessages, socialIdGroup));
+
+        Promise.all(allFieldsReady).then(() => submitButton.disabled = false);
+
+        form.addEventListener('submit', ev => {
+            ev.preventDefault();
+
+            const sale = {
+                payerEmail: 'test@mailforspam.com',
+                payerPhone: '1231231',
+                payerZipCode: '123123123',
+                payerSocialId: '65656',
+                total: {
+                    label: 'Yassu',
+                    amount: {
+                        currency: 'ILS',
+                        value: '1.00',
+                    }
+                }
+            };
+
+
+            tokenizationStarted();
+            instance.tokenize(sale)
+                .then(data => {
+                    tokenizationFinished();
+                    // send request to the server with the token and with the data
+                    const serverUrl = '<%- serverUrl %>/card';
+                    const currentUrl = new URL(window.location.href);
+                    const searchParams = new URLSearchParams(currentUrl.search);
+                    const reqId = searchParams.get('reqId');
+                    fetch(serverUrl, {
+                        method: 'POST', // Specify the request method
+                        headers: {
+                            'Content-Type': 'application/json', // Set the content type of the request body
+                        },
+                        body: JSON.stringify({...data, reqId }), // Convert the JSON data to a string before sending it
+                    })
+                        .then((response) => {
+                            if (!response.ok) {
+                                throw new Error(`HTTP error ${response.status}`);
+                            }
+                            return response.json(); // Parse the response as JSON
+                        })
+                        .then((data) => {
+                            console.log('Success:', data); // Handle the successful response here
+                            const redirectURL = '<%- serverUrl %>/thanks';
+                            window.location.href = redirectURL;
+                        })
+                        .catch((error) => {
+                            console.error('Error:', error); // Handle any errors that occurred during the fetch
+                        });
+
+                })
+                .catch(err => {
+                    if (err && err.type == 'tokenize-error') {
+                        let errorStr = '';
+                        const errorsObj = err.errors || {};
+                        for (let key in errorsObj) {
+                            errorStr += `${errorsObj[key]}\n`;
+                        }
+                        alert(errorStr);
+                    }
+                    console.error(err);
+                    tokenizationFinished();
+                });
+        });
+
+        // document.getElementById('tear-down').addEventListener('click', () => instance.teardown());
+
+    });
+</script>
+</body>
+
+</html>

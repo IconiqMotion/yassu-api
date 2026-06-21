@@ -1,0 +1,11 @@
+node_modules
+.idea
+dist
+.env
+.env.*
+src/firebase-admin-sdk.json
+src/env/dev.json
+src/env/prod.json
+public/uploads
+.DS_Store
+*.log

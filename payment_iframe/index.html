@@ -1,0 +1,288 @@
+<!-- Header  -->
+<!-- Shop owner html comments ( from Bill Gold Admin system ) -->
+
+<!-- product list for desktop - using Css to show hide -->
+<!-- ko if: !IsHideInvoiceInfo -->
+<!-- /ko -->
+<!-- Order Head Allow customer to edit order(invoice) information-->
+
+<!-- custom fields -->
+<div class="blockDetails customDetails" data-bind="visible: customFields.length > 0">
+    <div class="blockDetailsIn">
+        <div class="title"><span data-bind="text: labels.MoreDetails"></span></div>
+        <!--
+            /* you can remove this comment to add a custom field manualy on the html page , change the [0] to select the number of the custom field to show ( you use the template to rander them one after the othere, see next rander)   */
+            <div class="formRow nameRow" data-bind="hide: customFields[0].hide, css: customFields[0].CssValid">
+                <span class="fieldName" data-bind="text: customFields[0].label"></span>
+                <span class="fieldInput"><input type="text" name="name" data-bind="value: customFields[0].value" /></span>
+            </div>
+            -->
+        <!-- ko template: { name:customDisplayMode , foreach: customFields}  -->
+        <!-- /ko -->
+        <script type="text/html" id="customFieldText">
+            <div class="formRow nameRow" data-bind="hide: hide, css: CssValid">
+                <label class="fieldName" data-bind="text: label"></label>
+                <span class="fieldInput"><input type="text" autocomplete="chrome-off" name="name" data-bind="value: value, attr: { id: 'custom_' + $index() }" /></span>
+            </div>
+        </script>
+        <script type="text/html" id="customFieldSelect">
+            <div class="formRow nameRow" data-bind="hide: hide, css: CssValid">
+                <span class="fieldName" data-bind="text: label"></span>
+                <span class="fieldInput"><select data-bind="options: selectValues, value: value, optionsCaption: optionsCaption" /></span>
+            </div>
+        </script>
+
+    </div>
+</div>
+
+<!-- Payments details  -->
+<div class="blockDetails paymentDetails">
+    <div class="blockDetailsIn">
+
+
+        <div class="title" data-bind="hide: (hideCreditCardInputs || hidePayPal && hideMasterPass && hideApplePay && hideUpayBitBtn && hidePayMeBitBtn)">
+            <span data-bind="text: labels.PayByCreditCard"></span>
+        </div>
+
+        <!-- Open Sum Text Box : IsOpenSum Param -->
+        <div class="formRow cardRow" data-bind="hide:openSum.hide, css:openSum.CssValid">
+            <label class="fieldName" data-bind="text:openSum.label" for="txtopenSum"></label>
+            <span class="fieldInput"><input type="number" maxlength="15" data-bind="value:openSum.value" id="txtopenSum"></span>
+        </div>
+
+        <div id="CreditCardDiv" data-bind="ifnot: hideCreditCardInputs">
+            <div class="formRow cardRow" data-bind="hide:cardNumber.hide, css:cardNumber.CssValid">
+                <label class="fieldName" data-bind="text:cardNumber.label" for="txtCardNumber"></label>
+                <span class="fieldInput">
+                    <input type="text" placeholder="הוסיפו את מספר הכרטיס שלכם" data-bind="value:cardNumber.value, disable:cardNumber.disabled , visible:IsMobile==false || IsToken" id="txtCardNumber">
+                    <input type="number" placeholder="הוסיפו את מספר הכרטיס שלכם" data-bind="value:cardNumber.value, disable:cardNumber.disabled , visible:IsMobile==true && !IsToken" id="txtCardNumber">
+                </span>
+            </div>
+
+            <div class="formRow expirationLabelRow">
+                <label class="fieldName" data-bind="text: lblExpiration "></label>
+            </div>
+
+            <div class="formRow expirationCvvRow">
+                <div class="expirationWrapper">
+                    <span class="fieldInput validityDate">
+                        <select id="validityYear" class="mini" name="validityYear" data-bind="options: expirationYear.selectValues, value: expirationYear.value, disable: expirationYear.disabled, att:{'aria-label':expirationYear.label}">
+                            <option value="2020">2020</option>
+                            <option value="2021">2021</option>
+                            <option value="2022">2022</option>
+                            <option value="2023">2023</option>
+                            <option value="2024">2024</option>
+                            <option value="2025">2025</option>
+                            <option value="2026">2026</option>
+                            <option value="2027">2027</option>
+                            <option value="2028">2028</option>
+                            <option value="2029">2029</option>
+                            <option value="2030">2030</option>
+                            <option value="2031">2031</option>
+                            <option value="2032">2032</option>
+                            <option value="2033">2033</option>
+                            <option value="2034">2034</option>
+                            <option value="2035">2035</option>
+                            <option value="2036">2036</option>
+                            <option value="2037">2037</option>
+                            <option value="2038">2038</option>
+                        </select>
+                        <select id="validityMonth" class="tiny" name="validityMonth" data-bind="value: expirationMonth.value, disable: expirationMonth.disabled, att:{'aria-label':expirationMonth.label}">
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                            <option value="9">9</option>
+                            <option value="10">10</option>
+                            <option value="11">11</option>
+                            <option value="12">12</option>
+                        </select>
+                    </span>
+                </div>
+
+                <div class="cvvRowWrapper" data-bind="hide:cvv.hide, css:cvv.CssValid">
+                    <span class="fieldName" data-bind="hide:cvv.hide">
+                        <label for="txtCvv">CVV</label>
+                        <a class="WhatIsCvvLightBox" target="_blank" title="what is cvv?" data-bind="attr: { href: '/Images/visamasterpic.gif' , title:cvv.label } ">
+                            <img data-bind="attr: { src: images.questionIcon , 'alt': cvvHelpIcon}">
+                        </a>
+                    </span>
+                    <span class="fieldInput">
+                        <input maxlength="4" placeholder="3 ספרות בגב הכרטיס" data-bind="hide:cvv.hide,value:cvv.value" id="txtCvv">
+                    </span>
+                </div>
+            </div>
+
+            <div class="formRow cardRow" data-bind="hide:false, css:cardOwnerID.CssValid">
+                <label class="fieldName" for="txtCardOwnerID">תעודת זהות</label>
+                <span class="fieldInput"><input type="text" maxlength="20" data-bind="value:cardOwnerID.value" id="txtCardOwnerID"></span>
+            </div>
+
+            <div class="formRow cardRow" data-bind="hide:false, css:cardOwnerName.CssValid">
+                <label class="fieldName" data-bind="text:cardOwnerName.label" for="txtCardOwnerName"></label>
+                <span class="fieldInput"><input type="text" maxlength="50" placeholder="הזינו את שמכם" data-bind="value:cardOwnerName.value" id="txtCardOwnerName"></span>
+            </div>
+
+            <div class="formRow cardRow" data-bind="hide:cardOwnerPhone.hide, css:cardOwnerPhone.CssValid">
+                <label class="fieldName" data-bind="text:cardOwnerPhone.label" for="txtCardOwnerPhone"></label>
+                <span class="fieldInput"><input type="tel" maxlength="20" data-bind="value:cardOwnerPhone.value" id="txtCardOwnerPhone"></span>
+            </div>
+
+            <div class="formRow cardRow" data-bind="hide:cardOwnerEmail.hide, css:cardOwnerEmail.CssValid">
+                <label class="fieldName" data-bind="text:cardOwnerEmail.label" for="txtCardOwnerEmail"></label>
+                <span class="fieldInput"><input type="email" class="directionLTR" maxlength="150" data-bind="value:cardOwnerEmail.value" id="txtCardOwnerEmail"></span>
+            </div>
+
+            <!-- ==================================== AVS Fields ==================================== -->
+            <!-- City -->
+            <div class="formRow cardRow" data-bind="hide:avsCity.hide, css:avsCity.CssValid">
+                <label class="fieldName" data-bind="text:avsCity.label" for="txtAvsCity"></label>
+                <span class="fieldInput"><input type="text" maxlength="20" data-bind="value:avsCity.value" id="txtAvsCity"></span>
+            </div>
+
+            <!-- Address -->
+            <div class="formRow cardRow" data-bind="hide:avsAddress.hide, css:avsAddress.CssValid">
+                <label class="fieldName" data-bind="text:avsAddress.label" for="txtAvsAddress"></label>
+                <span class="fieldInput"><input type="text" maxlength="20" data-bind="value:avsAddress.value" id="txtAvsAddress"></span>
+            </div>
+
+            <!-- Zip code/Postal Code (מיקוד) -->
+            <div class="formRow cardRow" data-bind="hide:avsZip.hide, css:avsZip.CssValid">
+                <label class="fieldName" data-bind="text:avsZip.label" for="txtAvsZip"></label>
+                <span class="fieldInput"><input type="text" maxlength="20" data-bind="value:avsZip.value" id="txtAvsZip"></span>
+            </div>
+            <!-- ==================================== AVS Fields ==================================== -->
+
+            <div class="formRow cardRow" data-bind="hide:true, css:numberOfPayments.CssValid">
+                <label class="fieldName" data-bind="text:numberOfPayments.label" for="numberOfPaymentsselect"></label>
+                <span class="fieldInput">
+                    <select class="tiny" data-bind="options: numberOfPayments.selectValues, value: numberOfPayments.value" id="numberOfPaymentsselect"></select>
+                </span>
+                <span class="fieldName summaryTotal" data-bind="text: summaryTotalText, hide: hideNumberOfPayments"></span>
+            </div>
+
+            <div class="formRow cardRow" data-bind="hide: condition.hide, css:condition.CssValid">
+                <span class="fieldName" data-bind="text:labels.IHaveReadTheAgreement"></span>
+                <span class="fieldInput">
+                    <input class="checkbox" type="checkbox" data-bind="checked: condition.booleanValue" />
+                    <a target="_blank" href="#" data-bind="attr: { href : condition.value }"><span class="fieldname checkbox" data-bind="text: condition.label"></span></a>
+                </span>
+            </div>
+        </div>
+
+        <div class="formRow cardRow" id="captcha_div" data-bind="visible: IsRecaptchaActive" render="explicit">
+            <span class="fieldName"></span>
+            <span class="fieldInput">
+                <div class="googleCaptchaBox">
+                    <div class="tightContainer googleCaptchaRequiredErr" style="z-index:5;" data-bind="style: { 'opacity': DispCaptchaReqErr() ? 1 : 0 }"></div>
+                    <div id="captcha_container" style="z-index:10;" render="explicit"
+                         data-callback="DispCaptchaReqErr_Clear" data-expired-callback="DispCaptchaReqErr_Set"></div>
+                </div>
+            </span>
+        </div>
+
+        <div class="submitDiv">
+            <div data-bind="visible:showCancelURL" class="homeLink"><a href="#" data-bind="attr: { href : cancelURL }, visible: showCancelURL"><span data-bind="text: labels.LinkBackToSite"></span></a></div>
+            <div class="buttonDiv">
+                <input type="button" value="המשך"
+                       role="button" data-bind="click: sendData, hide: hideCreditCardInputs, enable: !loadMode()" />
+            </div>
+        </div>
+
+        <div class="errorDiv" data-bind="visible: error.hasMessages()">
+            <div class="errorDivIn">
+                <ul>
+                    <!-- ko template: { foreach: error.messages } -->
+                    <li><span class="message message1" data-bind="text: message"></span></li>
+                    <!-- /ko -->
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- footer -->
+<div class="footer">
+    <div class="footerIn">
+        <div class="right">
+            <div class="cardsLogos">
+                <!-- ko template: { foreach: logos }  -->
+                <div class="cardsLogo">
+                    <img class="logoImg" data-bind="attr: { src: $data }" />
+                </div>
+                <!-- /ko -->
+            </div>
+            <div class="cardcomText"><span data-bind="html: labels.PoweredByCardCom"></span></div>
+        </div>
+        <div class="left">
+            <div class="pciLogo"><img alt="PCI DSS logo" data-bind="attr: { src: images.pciLogo }" border="0"></div>
+            <div class="cardcomLogo"><img alt="Cardcom logo" data-bind="attr: { src: images.cardcomLogo }" border="0"></div>
+        </div>
+    </div>
+</div>
+
+<!-- popUp Messages -->
+<div id="PopUpRTL" class='white-popup white-popup-rtl mfp-hide'>
+    <h2 data-bind="html: PopUpDealWasSuccessfulResult">  </h2>
+    <span data-bind="html: labels.PopUpRedirectTo"> </span>
+    <span style="color:red" data-bind="html: labels.PopUpYouClickThis"> נא לא לסגור את הדפדפן</span>
+    <a data-bind="attr: { href: PopUpRedirectTo}, hide: hideApplePay"><span data-bind="html: labels.PopUpThis">כאן</span></a>
+    <img src="/Images/2015/ajax-loader.gif" />
+</div>
+
+<div id="PopUpLTR" class='white-popup mfp-hide'>
+    <h2 data-bind="html: PopUpDealWasSuccessfulResult"> </h2>
+    <span data-bind="html: labels.PopUpRedirectTo"></span>
+
+    <br />
+    <span data-bind="html: labels.PopUpYouClickThis"> </span>
+    <a data-bind="attr: { href: PopUpRedirectTo}, hide: hideApplePay"><span data-bind="html: labels.PopUpThis">Here</span></a>
+    <img src="/Images/2015/ajax-loader.gif" />
+
+    <!--<br />
+    <span data-bind="html: labels.PopUpYouClickThis">If you are not redirect you can click</span>
+    <a data-bind="attr: { href: PopUpRedirectTo}"> <span data-bind="html: labels.PopUpThis">this</span></a>-->
+</div>
+
+<div id="PopUpRTLBit" class='white-popup white-popup-rtl mfp-hide'>
+    <div>
+        <h2 style="display:flex; justify-content: space-between; flex-direction: row;">
+            מיד תועברו לתשלום ב-Bit...
+            <img src="/Images/2015/ajax-loader.gif" style="height: 1em; width: 1em;" />לתשלום
+        </h2>
+
+    </div>
+    <span> רגע קצר ומעבירים אתכם לתשלום ב-Bit (באפליקציה או באתר). </span>
+    <br /><br />
+
+    <div data-bind="if: shouldDisplayBitLinks" style="display: inline-flex;">
+        <div style="flex-grow: 1; margin-left: 20px">
+            <span>אם במקרה לא הועברתם באופן אוטומטי:</span>
+            <ul>
+                <li data-bind="visible: BitMobilePageURL">
+                    <span>
+                        לגולשים ב-Mobile,
+                        <a href="" target="_blank" data-bind="attr: { href: BitMobilePageURL }">לחצו כאן</a>
+                        לפתיחת האפליקציה
+                    </span>
+                </li>
+                <li data-bind="visible: BitWebPageURL">
+                    <span>
+                        <span data-bind="if: BitMobilePageURL">או, </span>
+                        <a href="" data-bind="attr: { href: BitWebPageURL }">לחצו כאן</a>
+                        לפתיחת העמוד מכל דפדפן ומחשב
+                    </span>
+                </li>
+            </ul>
+        </div>
+        <div data-bind="visible: BitQrCodeURL" style="display: flex; flex-direction: column; align-items: center;">
+            <img id="UpayBitQrImg" src="" data-bind="attr: { src: BitQrCodeURL }"
+                 style="flex: 1; height: 5em; width: 5em; aspect-ratio: 1 / 1; image-rendering: pixelated;" />
+        </div>
+    </div>
+</div>
