@@ -25,8 +25,10 @@ export class SmsService {
 			} else {
 				console.log('failed to send sms to number - ' + to + ' - error code: ' + response.data);
 			}
-		} catch (error) {
+		} catch (error: any) {
 			console.log('error in sending sms to number - ' + to + ' - ' + error);
+			console.log('sms4free response:', JSON.stringify(error.response?.data));
+			console.log('sms4free credentials check - key:', sms4freeKey ? 'SET' : 'MISSING', 'user:', sms4freeUser ? 'SET' : 'MISSING', 'pass:', sms4freePass ? 'SET' : 'MISSING');
 		}
 	}
 
