@@ -20,13 +20,14 @@ export class SmsService {
 				recipient: to,
 				msg: text,
 			});
-			if (response.data > 0) {
+			const status = typeof response.data === 'number' ? response.data : response.data?.status ?? response.data;
+			if (Number(status) > 0) {
 				console.log('sms sent successfully to number - ' + to);
 			} else {
-				console.log('failed to send sms to number - ' + to + ' - error code: ' + response.data);
+				console.log('failed to send sms to number - ' + to + ' - response: ' + JSON.stringify(response.data));
 			}
 		} catch (error: any) {
-			console.log('error in sending sms to number - ' + to + ' - ' + error);
+			console.log('error in sending sms to number - ' + to + ' - ' + error.message);
 			console.log('sms4free response:', JSON.stringify(error.response?.data));
 			console.log('sms4free credentials check - key:', sms4freeKey ? 'SET' : 'MISSING', 'user:', sms4freeUser ? 'SET' : 'MISSING', 'pass:', sms4freePass ? 'SET' : 'MISSING');
 		}
