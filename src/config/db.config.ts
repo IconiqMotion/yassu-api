@@ -11,6 +11,14 @@ const bootstrapDb = async () => {
 		Logger.error(e.message);
 	}
 
+	if (conn) {
+		try {
+			await conn.query('ALTER TABLE "credit_card_request" ADD COLUMN IF NOT EXISTS "lowProfileId" varchar');
+		} catch (e) {
+			Logger.error(`Failed to ensure lowProfileId column: ${e.message}`);
+		}
+	}
+
 	return conn;
 };
 
