@@ -32,22 +32,27 @@ export class CardcomService {
 	 * @param userName
 	 */
 	async getPaymentIframe(requestId: number) {
-		const response = await axios.post(
-			`${this.paymentUrl}/LowProfile/Create`,
-			{
-				SuccessRedirectUrl: `${getConfig().serverUrl}/card/success-add-payment-card`,
-				FailedRedirectUrl: `${getConfig().serverUrl}/card/fail-add-payment-card`,
-				WebHookUrl: `${getConfig().serverUrl}/card/add-payment-card/${requestId}`,
-				TerminalNumber: getConfig().cardCom.terminalId,
-				ApiName: getConfig().cardCom.apiName,
-				Operation: 'CreateTokenOnly',
-				Amount: 1,
-			},
-			{headers: {'Content-Type': 'application/json'}}
-		);
+		let response;
+		try {
+			response = await axios.post(
+				`${this.paymentUrl}/LowProfile/Create`,
+				{
+					SuccessRedirectUrl: `${getConfig().serverUrl}/card/success-add-payment-card`,
+					FailedRedirectUrl: `${getConfig().serverUrl}/card/fail-add-payment-card`,
+					WebHookUrl: `${getConfig().serverUrl}/card/add-payment-card/${requestId}`,
+					TerminalNumber: getConfig().cardCom.terminalId,
+					ApiName: getConfig().cardCom.apiName,
+					Operation: 'CreateTokenOnly',
+					Amount: 1,
+				},
+				{headers: {'Content-Type': 'application/json'}}
+			);
+		} catch (e) {
+			throw new Error(`CardCom LowProfile/Create request failed: ${e?.response ? JSON.stringify(e.response.data) : e?.message}`);
+		}
 		const data = response.data;
 		if (data.ResponseCode !== 0) {
-			throw new Error('Error while creating payment card');
+			throw new Error(`CardCom rejected LowProfile/Create (ResponseCode ${data.ResponseCode}): ${data.Description || 'no description returned'}`);
 		}
 		return { success: true, url: data.Url || '', requestId };
 	}

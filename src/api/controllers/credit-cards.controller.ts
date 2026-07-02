@@ -55,7 +55,7 @@ export const getIframeURL = async (req: Request, res: Response) => {
 	} catch (e) {
 		return resService.handleError(res, new BadRequestError(
 			'general.error',
-			'err',
+			`Failed to create payment iframe: ${e?.message}`,
 			e
 		));
 	}
