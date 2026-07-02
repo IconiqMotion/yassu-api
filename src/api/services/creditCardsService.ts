@@ -30,7 +30,11 @@ export class CreditCardsService {
 
     async getIframe(user: User) {
         const creditCardRequest = await CreditCardRequest.create({user: user.id}).save();
-        const iframeData = this.cardComService.getPaymentIframe(creditCardRequest.id);
+        const iframeData = await this.cardComService.getPaymentIframe(creditCardRequest.id);
+        if (iframeData.lowProfileId) {
+            creditCardRequest.lowProfileId = iframeData.lowProfileId;
+            await creditCardRequest.save();
+        }
         return iframeData;
     }
 
@@ -43,11 +47,24 @@ export class CreditCardsService {
     }
 
     async completeAddingNewCard(id: number, payload: any) {
-        console.log('*********')
-        console.log('completeAddingNewCard', id, payload);
         const creditCardReq = await CreditCardRequest.findOne({ where: { id } });
         if (!creditCardReq) {
             throw new Error('Credit card request not found');
+        }
+        await this.saveCardFromWebhookPayload(creditCardReq, payload);
+    }
+
+    async completeAddingNewCardByLowProfileId(lowProfileId: string, payload: any) {
+        const creditCardReq = await CreditCardRequest.findOne({ where: { lowProfileId } });
+        if (!creditCardReq) {
+            throw new Error(`Credit card request not found for LowProfileId ${lowProfileId}`);
+        }
+        await this.saveCardFromWebhookPayload(creditCardReq, payload);
+    }
+
+    private async saveCardFromWebhookPayload(creditCardReq: CreditCardRequest, payload: any) {
+        if (creditCardReq.used) {
+            return;
         }
 
         function convertTokenToDate(dateString: string): Date {
@@ -87,7 +104,8 @@ export class CreditCardsService {
 
         await newCard.save();
 
-        return;
+        creditCardReq.used = true;
+        await creditCardReq.save();
     }
 
     async getUserVirtualCardTransactions(id: number) {

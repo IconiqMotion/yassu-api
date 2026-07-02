@@ -127,6 +127,24 @@ export const completeAddingNewCard = async (req: Request, res: Response) => {
 	}
 };
 
+export const cardWebhook = async (req: Request, res: Response) => {
+	try {
+		const payload = req.body;
+		const lowProfileId = payload.LowProfileId;
+		if (!lowProfileId) {
+			throw new Error('Missing LowProfileId in webhook payload');
+		}
+		await cardsService.completeAddingNewCardByLowProfileId(lowProfileId, payload);
+		return resService.handleSuccess(res, {});
+	} catch (e) {
+		return resService.handleError(res, new BadRequestError(
+			'general.error',
+			`Failed to process card webhook: ${e?.message}`,
+			e
+		));
+	}
+};
+
 export const deleteCard = async (req: Request, res: Response) => {
 	try {
 		const transformed = plainToInstance(IdDTO, req.params) as IdDTO;

@@ -11,4 +11,6 @@ export class CreditCardRequest extends MainEntity {
 	userId: User['id'];
 	@Column({nullable: true, default: false})
 	used: boolean;
+	@Column({nullable: true})
+	lowProfileId?: string;
 }

@@ -3,7 +3,7 @@ import {validationMiddleware} from '../middlewares/validation.middleware';
 import {isAuthenticatedGuard} from "../guards";
 import {SendGiftDTO} from "../dto/sendGiftDTO";
 import {
-    addCard, completeAddingNewCard,
+    addCard, cardWebhook, completeAddingNewCard,
     deleteCard, failAddPaymentCard,
     getAllCards,
     getHistory,
@@ -26,3 +26,4 @@ router.get('/success-add-payment-card', successAddPaymentCard);
 router.get('/fail-add-payment-card', failAddPaymentCard);
 router.get('/fee', feeDetails);
 router.post('/add-payment-card/:uuid', completeAddingNewCard);
+router.post('/webhook', cardWebhook);

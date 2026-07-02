@@ -54,7 +54,7 @@ export class CardcomService {
 		if (data.ResponseCode !== 0) {
 			throw new Error(`CardCom rejected LowProfile/Create (ResponseCode ${data.ResponseCode}): ${data.Description || 'no description returned'}`);
 		}
-		return { success: true, url: data.Url || '', requestId };
+		return { success: true, url: data.Url || '', requestId, lowProfileId: data.LowProfileId };
 	}
 	/**
 	 * Get payment iframe
