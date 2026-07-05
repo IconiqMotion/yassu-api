@@ -97,8 +97,7 @@ export class CardcomService {
 		 const payload: any = {
 			 TerminalNumber: getConfig().cardCom.terminalId,
 			 ApiName: getConfig().cardCom.apiName,
-			 //Amount: sum,
-			 Amount: 5,
+			 Amount: sum,
 			 Token: token,
 			 CardExpirationMMYY: cardExpirationMMYY,
 			 Advanced: {
