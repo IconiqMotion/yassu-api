@@ -726,7 +726,11 @@ export class EventService {
                             }
                         }
 
-                        await this.notifyAdminsOnTransaction(senderUser, receiverUser, createGiftDTO, fee);
+                        try {
+                            await this.notifyAdminsOnTransaction(senderUser, receiverUser, createGiftDTO, fee);
+                        } catch (notifyError) {
+                            console.error('Failed to notify admins on transaction:', notifyError);
+                        }
 
                     } catch (error) {
                         throw error;
