@@ -15,7 +15,7 @@
     "watch-node": "nodemon",
     "watch": "concurrently -k -p \"[{name}]\" -n \"TypeScript,Node\" -c \"yellow.bold,cyan.bold,green.bold\" \"npm run watch-ts\" \"npm run watch-node\"",
     "run-ts": "ts-node src/app.ts",
-    "run:cron": "ts-node src/crons/cron.aggregator.ts",
+    "run:cron": "ts-node src/cron.ts",
     "copy-static-assets": "ts-node copyStaticAssets.ts",
     "start:idea": "ts-node $NODE_DEBUG_OPTION --ignore false src/app.ts --env=dev",
     "migration:generate": "ts-node ./node_modules/typeorm/cli migration:generate -n migration -d src/migration -f ./src/config/orm.config.ts",
