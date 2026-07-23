@@ -3,13 +3,24 @@ import getConfig from '../../config/env.config';
 import Logger from '../../config/logger.config';
 import { Service } from 'typedi';
 import path from 'path';
+import fs from 'fs';
 @Service()
 export class PushService {
 	constructor() {
-		if (!admin.apps.length) {
+		if (admin.apps.length) return;
+
+		if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
 			admin.initializeApp({
-				credential: admin.credential.cert(path.resolve(__dirname, '../../firebase-admin-sdk.json')),
+				credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON)),
 			});
+			return;
+		}
+
+		const localCredentialPath = path.resolve(__dirname, '../../firebase-admin-sdk.json');
+		if (fs.existsSync(localCredentialPath)) {
+			admin.initializeApp({ credential: admin.credential.cert(localCredentialPath) });
+		} else {
+			Logger.error('Firebase credentials not configured (FIREBASE_SERVICE_ACCOUNT_JSON) — push notifications disabled');
 		}
 	}
 
