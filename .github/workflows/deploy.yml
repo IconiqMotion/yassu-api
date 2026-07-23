@@ -1,4 +1,4 @@
-name: Deploy to EC2
+name: Deploy to Heroku
 
 on:
   push:
@@ -9,15 +9,10 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy to server via SSH
-        uses: appleboy/ssh-action@v1.0.3
+      - uses: actions/checkout@v4
+      - name: Deploy to Heroku
+        uses: akhileshns/heroku-deploy@v3.13.15
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            cd ~/yassu-api
-            git pull origin main
-            npm install
-            npm run build
-            pm2 restart yassu-api
+          heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
+          heroku_app_name: ${{ secrets.HEROKU_APP_NAME }}
+          heroku_email: ${{ secrets.HEROKU_EMAIL }}

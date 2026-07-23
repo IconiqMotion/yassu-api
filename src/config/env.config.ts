@@ -39,6 +39,7 @@ export interface IConfig {
 		accessKeyId: string;
 		secretAccessKey: string;
 	};
+	awsRegion?: string;
 	synchronize: boolean;
 	logging: boolean;
 	dropSchema: boolean;
@@ -106,18 +107,31 @@ export interface IConfig {
 let config: any;
 const init = () => {
 	let envPath = path.join(path.dirname(__dirname), 'env');
+	const requireIfExists = (file: string) => {
+		try {
+			return require(path.join(envPath, file));
+		} catch (e) {
+			return {};
+		}
+	};
 	switch (argv.env) {
 		case 'prod':
 		case 'production':
-			config = require(path.join(envPath, 'prod.json'));
+			config = requireIfExists('prod.json');
 			break;
 		case 'dev':
 		case 'develop':
-			config = require(path.join(envPath, 'dev.json'));
+			config = requireIfExists('dev.json');
 			break;
 		default:
-			config = require(path.join(envPath, 'dev.json'));
+			config = requireIfExists('dev.json');
 			break;
+	}
+
+	// Heroku has no filesystem persistence across deploys, so src/env/*.json (gitignored) won't
+	// exist there. CONFIG_JSON lets the whole file be supplied as one config var instead.
+	if (process.env.CONFIG_JSON) {
+		Object.assign(config, JSON.parse(process.env.CONFIG_JSON));
 	}
 
 	// Override cardCom config from environment variables if present
@@ -133,6 +147,15 @@ const init = () => {
 	}
 
 	// Database — env vars override prod.json so secrets stay out of source
+	// Heroku Postgres only exposes a single DATABASE_URL; parse it into the discrete fields this app expects.
+	if (process.env.DATABASE_URL) {
+		const dbUrl = new URL(process.env.DATABASE_URL);
+		config.dbHost = dbUrl.hostname;
+		config.dbPort = parseInt(dbUrl.port, 10) || 5432;
+		config.dbUser = decodeURIComponent(dbUrl.username);
+		config.dbPass = decodeURIComponent(dbUrl.password);
+		config.dbName = dbUrl.pathname.replace(/^\//, '');
+	}
 	if (process.env.DB_HOST) config.dbHost = process.env.DB_HOST;
 	if (process.env.DB_PORT) config.dbPort = parseInt(process.env.DB_PORT, 10);
 	if (process.env.DB_USER) config.dbUser = process.env.DB_USER;
@@ -148,6 +171,17 @@ const init = () => {
 		};
 	}
 	if (process.env.S3_BUCKET) config.bucketName = process.env.S3_BUCKET;
+	if (process.env.AWS_REGION) config.awsRegion = process.env.AWS_REGION;
+
+	// Bucketeer (Heroku add-on, S3-compatible) — takes priority since it's what Heroku actually provisions
+	if (process.env.BUCKETEER_AWS_ACCESS_KEY_ID) {
+		config.awsAuth = {
+			accessKeyId: process.env.BUCKETEER_AWS_ACCESS_KEY_ID,
+			secretAccessKey: process.env.BUCKETEER_AWS_SECRET_ACCESS_KEY,
+		};
+		config.bucketName = process.env.BUCKETEER_BUCKET_NAME;
+		config.awsRegion = process.env.BUCKETEER_AWS_REGION;
+	}
 
 	// SendGrid
 	if (process.env.SENDGRID_KEY) {

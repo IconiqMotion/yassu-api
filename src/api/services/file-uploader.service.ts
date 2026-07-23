@@ -17,6 +17,7 @@ export class FileUploaderService {
 	constructor(props) {
 		const auth = getConfig().awsAuth;
 		awsSdk.config.credentials = auth;
+		if (getConfig().awsRegion) awsSdk.config.region = getConfig().awsRegion;
 
 		this.s3 = new awsSdk.S3();
 	}
