@@ -134,6 +134,10 @@ const init = () => {
 		Object.assign(config, JSON.parse(process.env.CONFIG_JSON));
 	}
 
+	// The public origin this server is reached at. CardCom builds its redirect and webhook URLs
+	// from this, so it has to track the live domain rather than whatever CONFIG_JSON was seeded with.
+	if (process.env.SERVER_URL) config.serverUrl = process.env.SERVER_URL;
+
 	// Override cardCom config from environment variables if present
 	if (process.env.CARDCOM_API_NAME || process.env.CARDCOM_TERMINAL_NUMBER) {
 		config.cardCom = {
