@@ -20,6 +20,7 @@ import { EmailService } from "./email.service";
 import { CardcomService } from "./cardcom.service";
 import { HashidsService } from "./hashids.service";
 import { BankAccountService } from "./bank-account.service";
+import { MessagingService } from "./messaging.service";
 import { EWithdrawType } from "../models/bank-account.model";
 import getConfig from "../../config/env.config";
 
@@ -38,7 +39,8 @@ export class GroupService {
         private cardcomService: CardcomService,
         private readonly smsService: SmsService,
         private readonly hashidsService: HashidsService,
-        private bankAccountService: BankAccountService
+        private bankAccountService: BankAccountService,
+        private readonly messagingService: MessagingService
     ) { }
 
     private getRepository() {
@@ -172,6 +174,31 @@ export class GroupService {
         return uniqueGroups.map(group => this.transformGroupForClient(group, user));
     }
 
+    /**
+     * Notifies newly invited members over every channel (push, WhatsApp, SMS) and records an
+     * in-app notification so the invitation also shows up in the notifications list.
+     * The push data payload is what lets the app open the group screen when the user taps it.
+     */
+    private async sendGroupInvitations(group: Group, adminUser: User, members: User[]) {
+        const deepLink = `https://yassuapp.com/${this.hashidsService.encodeGroupId(group.id)}`;
+        const title = 'הזמנה לקבוצה';
+        const message = `היי, ${adminUser.fullName} הזמין אותך לקבוצת ${group.name}. הצטרפו עכשיו באפליקציית יאסו! ${deepLink}`;
+
+        await this.messagingService.notifyMany(members, {
+            title,
+            body: message,
+            text: message,
+            type: 'group',
+            entityType: 'group',
+            entityId: group.id,
+            data: {
+                groupId: group.id.toString(),
+                action: 'group_invite',
+                deepLink,
+            },
+        });
+    }
+
     async createGroup(createGroupDTO: CreateGroupDTO, adminUser: User) {
         // 1) Normalize and parse the receiver's phone number
         const receiverPhoneNumber = parsePhone(createGroupDTO.receiverPhoneNumber);
@@ -220,36 +247,7 @@ export class GroupService {
             await groupMember.save();
         }
 
-        await Promise.all(
-            members.map((member) => {
-                const encodedGroupId = this.hashidsService.encodeGroupId(group.id);
-                const deepLink = `https://yassuapp.com/${encodedGroupId}`;
-                let message = ` היי, ${adminUser.fullName} הזמין אותך לקבוצת ${group.name}. הצטרפו עכשיו באפליקציית יאסו! ${deepLink}`;
-                
-                // Ensure the link doesn't appear twice (bug fix)
-                // Remove all duplicate occurrences of the link, keeping only the first one
-                const escapedLink = deepLink.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                const linkMatches = message.match(new RegExp(escapedLink, 'g'));
-                if (linkMatches && linkMatches.length > 1) {
-                    // Find first occurrence index and remove all subsequent ones
-                    const firstIndex = message.indexOf(deepLink);
-                    message = message.substring(0, firstIndex + deepLink.length) + 
-                             message.substring(firstIndex + deepLink.length).replace(new RegExp(escapedLink, 'g'), '');
-                }
-
-                if (member.fcmToken) {
-                    this.pushService.send(member.fcmToken, 'הזמנה לקבוצה', message, {
-                        groupId: group.id.toString(),
-                        action: 'group_invite',
-                        deepLink: deepLink
-                    });
-                }
-                if (member.phone) {
-                    this.smsService.sendWhatsappMessage(member.phone, message);
-                    return this.smsService.sendSms(member.phone, message);
-                }
-            })
-        );
+        await this.sendGroupInvitations(group, adminUser, members);
 
         return group;
     }
@@ -346,16 +344,30 @@ export class GroupService {
         group.moneyRequestedStatus = EMoneyRequestedStatus.REQUESTED;
         await group.save();
 
-        for (const member of group.members) {
-            if (member.fcmToken) {
-                await this.pushService.send(
-                    member.fcmToken,
-                    `${user.fullName} קיבל את המתנה!🎉`,
-                    `${user.fullName}  מודה לך על המתנה שהעברת לו. תודה רבה!`,
-                    {}
-                );
-            }
-        }
+        await this.messagingService.notifyMany(group.members, {
+            title: `${user.fullName} קיבל את המתנה!🎉`,
+            body: `${user.fullName} מודה לך על המתנה שהעברת לו. תודה רבה!`,
+            type: 'group',
+            entityType: 'group',
+            entityId: group.id,
+            data: {
+                groupId: group.id.toString(),
+                action: 'group_money_requested',
+            },
+        });
+
+        // Confirm to the recipient that the collected money is on its way
+        await this.messagingService.notify(user, {
+            title: 'בקשת הכסף נרשמה 💰',
+            body: `בקשת איסוף הכסף מקבוצת ${group.name} בסך ${amount} ש"ח נרשמה במערכת ותטופל בהקדם.`,
+            type: 'payment',
+            entityType: 'group',
+            entityId: group.id,
+            data: {
+                groupId: group.id.toString(),
+                action: 'group_money_requested',
+            },
+        });
 
         return group;
     }
@@ -399,22 +411,23 @@ export class GroupService {
         // Persist changes to the group
         await group.save();
 
-        // 6) Send push notifications to all members
-        for (const member of group.members) {
-            if (member.fcmToken) {
-                await this.pushService.send(
-                    member.fcmToken,
-                    `${adminUser.fullName} קיבל את המתנה!🎉`,
-                    `${adminUser.fullName}  מודה לך על המתנה שהעברת לו. תודה רבה!`,
-                    {}
-                );
-            }
-        }
+        // 6) Notify all members over every channel
+        await this.messagingService.notifyMany(group.members, {
+            title: `${adminUser.fullName} קיבל את המתנה!🎉`,
+            body: `${adminUser.fullName} מודה לך על המתנה שהעברת לו. תודה רבה!`,
+            type: 'group',
+            entityType: 'group',
+            entityId: group.id,
+            data: {
+                groupId: group.id.toString(),
+                action: 'group_money_withdrawn',
+            },
+        });
 
         return group;
     }
 
-    async inviteMembersToGroup(groupId: number, phoneNumbers: string[]) {
+    async inviteMembersToGroup(groupId: number, adminUser: User, phoneNumbers: string[]) {
         // 1) Find the group
         const group = await this.getRepository().findOne({
             where: { id: groupId },
@@ -429,12 +442,11 @@ export class GroupService {
             throw new Error('לא ניתן להזמין חברים לקבוצה שכבר נפתחה');
         }
 
-        // We will accumulate newly added members, for push/sms
         const newlyAddedMembers: User[] = [];
         const duplicatePhones: string[] = [];
-        const groupMemberRepo = this.getGroupMemberRepository();
 
-        // 2) For each phone number, parse and get/create the user
+        // 2) Resolve every phone number first and validate the whole batch BEFORE writing anything,
+        //    so a request that ends up rejected doesn't leave half the members invited.
         for (const phone of phoneNumbers) {
             const parsedPhone = parsePhone(phone);
             const { user: memberUser } = await this.userService.getOrCreateByPhone(parsedPhone, {});
@@ -443,27 +455,16 @@ export class GroupService {
             const existingGroupMember = group.groupMembers?.find((gm) => gm.user.id === memberUser.id);
             const alreadyMember = group.members.find((m) => m.id === memberUser.id);
             const isAdmin = (group.adminUser as User).id === memberUser.id;
+            const alreadyInBatch = newlyAddedMembers.some((m) => m.id === memberUser.id);
 
-            if (existingGroupMember || alreadyMember || isAdmin) {
-                // User is already invited/member/admin - collect for error message
+            if (existingGroupMember || alreadyMember || isAdmin || alreadyInBatch) {
                 duplicatePhones.push(parsedPhone);
             } else {
-                // Add to old members array for backward compatibility
-                group.members.push(memberUser);
-
-                // Create new GroupMember with accepted: false
-                const groupMember = groupMemberRepo.create({
-                    group: group,
-                    user: memberUser,
-                    accepted: false // Новые приглашения не приняты
-                });
-                await groupMember.save();
-
                 newlyAddedMembers.push(memberUser);
             }
         }
 
-        // If there are duplicate invitations, throw an error
+        // If there are duplicate invitations, throw before any write or notification happens
         if (duplicatePhones.length > 0) {
             const duplicateList = duplicatePhones.join(', ');
             if (duplicatePhones.length === 1) {
@@ -475,46 +476,42 @@ export class GroupService {
 
         // If no new members were added, return early
         if (newlyAddedMembers.length === 0) {
-            return group;
+            return this.getGroupById(groupId, adminUser);
         }
 
-        // 4) Send SMS + push notifications to newly added members
-        await Promise.all(
-            newlyAddedMembers.map((member) => {
-                const encodedGroupId = this.hashidsService.encodeGroupId(group.id);
-                const deepLink = `https://yassuapp.com/${encodedGroupId}`;
-                let message = ` היי, ${(group.adminUser as User).fullName} הזמין אותך לקבוצת ${group.name}. הצטרפו עכשיו באפליקציית יאסו! ${deepLink}`;
-                
-                // Ensure the link doesn't appear twice (bug fix)
-                // Remove all duplicate occurrences of the link, keeping only the first one
-                const escapedLink = deepLink.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                const linkMatches = message.match(new RegExp(escapedLink, 'g'));
-                if (linkMatches && linkMatches.length > 1) {
-                    // Find first occurrence index and remove all subsequent ones
-                    const firstIndex = message.indexOf(deepLink);
-                    message = message.substring(0, firstIndex + deepLink.length) + 
-                             message.substring(firstIndex + deepLink.length).replace(new RegExp(escapedLink, 'g'), '');
-                }
-                
-                if (member.fcmToken) {
-                    this.pushService.send(member.fcmToken, 'הזמנה לקבוצה', message, {
-                        groupId: group.id.toString(),
-                        action: 'group_invite',
-                        deepLink: deepLink
-                    });
-                }
-                if (member.phone) {
-                    this.smsService.sendWhatsappMessage(member.phone, message);
-                    return this.smsService.sendSms(member.phone, message);
-                }
-            })
+        // 4) Persist the new GroupMember rows.
+        //
+        //    Do NOT call group.save() here. Group.groupMembers is @OneToMany with cascade: true, so
+        //    saving the group with the relation loaded makes TypeORM diff the in-memory array
+        //    (which does not contain these brand new rows) against the database and unbind
+        //    whatever is missing — setting group_member.groupId to NULL. That silently dropped
+        //    every member added to an existing group: the invite notification went out but the
+        //    member never showed up in the group or in their own invitations list.
+        //    The members many-to-many is updated through a targeted relation query instead.
+        //    Referencing the group by id (rather than the loaded entity) keeps TypeORM from
+        //    traversing back into that stale groupMembers array at all.
+        const groupMemberRepo = this.getGroupMemberRepository();
+        await groupMemberRepo.save(
+            newlyAddedMembers.map((memberUser) => groupMemberRepo.create({
+                group: { id: group.id } as Group,
+                user: { id: memberUser.id } as User,
+                accepted: false
+            }))
         );
 
-        // 5) Save the updated group
-        await group.save();
+        // Keep the legacy members many-to-many in sync without touching the groupMembers relation
+        await this.getRepository()
+            .createQueryBuilder()
+            .relation(Group, 'members')
+            .of(group.id)
+            .add(newlyAddedMembers.map((memberUser) => memberUser.id));
 
-        // Optionally return the updated group or newly added members
-        return group;
+        // 5) Notify the newly added members over every channel
+        await this.sendGroupInvitations(group, group.adminUser as User, newlyAddedMembers);
+
+        // 6) Return the group in the same shape the client gets from GET /group/:id, so the
+        //    members list can be refreshed straight from this response
+        return this.getGroupById(groupId, adminUser);
     }
 
     async editGroup(groupId: number, adminUser: User, newName: string, newDate: Date, newComment?: string) {
@@ -635,17 +632,24 @@ export class GroupService {
         // 4) Save the group (to persist the new greeting/transaction references)
         await group.save();
 
-        // 5) Send a push notification only to the group admin (not to all members)
+        // 5) Notify only the group admin (not all members)
         const adminUser = group.adminUser as User;
-        
+
         // Title and body in Hebrew
         const title = 'ברכה חדשה בקבוצה!';
         const body = `${user.fullName || 'משתמש'} שלח/ה ברכה חדשה בקבוצה "${group.name}".`;
 
-        // Only send notification to group admin if they have fcmToken and are not the sender
-        if (adminUser && adminUser.fcmToken && adminUser.id !== user.id) {
-            await this.pushService.send(adminUser.fcmToken, title, body, {
-                // Additional data can be included here if needed
+        if (adminUser && adminUser.id !== user.id) {
+            await this.messagingService.notify(adminUser, {
+                title,
+                body,
+                type: 'group',
+                entityType: 'group',
+                entityId: group.id,
+                data: {
+                    groupId: group.id.toString(),
+                    action: 'group_greeting',
+                },
             });
         }
 
@@ -754,6 +758,27 @@ export class GroupService {
 
         groupMember.accepted = true;
         await groupMember.save();
+
+        // Let the group admin know someone joined
+        const group = await this.getRepository().findOne({
+            where: { id: groupId },
+            relations: ['adminUser'],
+        });
+        const adminUser = group?.adminUser as User;
+        if (adminUser && adminUser.id !== userId) {
+            const memberName = groupMember.user?.fullName || 'משתמש';
+            await this.messagingService.notify(adminUser, {
+                title: 'הצטרפות חדשה לקבוצה',
+                body: `${memberName} הצטרף לקבוצת ${group.name}.`,
+                type: 'group',
+                entityType: 'group',
+                entityId: groupId,
+                data: {
+                    groupId: groupId.toString(),
+                    action: 'group_member_joined',
+                },
+            });
+        }
 
         return groupMember;
     }

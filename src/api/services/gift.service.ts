@@ -17,6 +17,7 @@ import {Event} from "../models/event.model";
 import {InternalTransaction} from "../models/internal-transaction.model";
 import {EmailService} from "./email.service";
 import {PushService} from "./push.service";
+import {MessagingService} from "./messaging.service";
 
 @Service()
 export class GiftService {
@@ -28,7 +29,8 @@ export class GiftService {
                 private smsService: SmsService,
                 private pushService: PushService,
                 private userService: UsersService,
-                private paymentService: PaymentService) {}
+                private paymentService: PaymentService,
+                private readonly messagingService: MessagingService) {}
 
     getRepository() {
         if (!this.repo) {
@@ -176,7 +178,7 @@ export class GiftService {
 
     private sendSmsToSenderUser(sender: string, senderPhone: string, receiver: string, totalGiftSum: number) {
         const message = `היי ${sender}! שלחת ${totalGiftSum}₪ עבור ${receiver}. חברך יקבל את המתנה בתאריך המועד שבחרת. תודה שהשתמשת באפליקציה שלנו`;
-        this.smsService.sendSms(senderPhone, message);
+        return this.messagingService.notifyPhone(senderPhone, message);
     }
 
     async getInternalTransactions() {
@@ -186,18 +188,26 @@ export class GiftService {
 
     async updateTransaction(id: number, comment: string) {
         const transaction = await InternalTransaction.findOne({where: {id}, relations: ['senderUser', 'receiverUser']});
-        if (transaction) {
-            transaction.isPaid = true;
-            if (comment) {
-                transaction.comment = comment;
-            }
-            await transaction.save();
+        if (!transaction) {
+            throw new Error('Transaction not found');
         }
-        // send push to receiver
+
+        transaction.isPaid = true;
+        if (comment) {
+            transaction.comment = comment;
+        }
+        await transaction.save();
+
+        // Tell the recipient the collected money has been transferred
         const user = transaction.receiverUser as User;
-        if (user.fcmToken) {
-            await this.pushService.send(user.fcmToken, '🎁' + user.firstName + ' העברנו לחשבונך סכום של ' + transaction.amount + ' ש"ח, יאסו!' + '🎁', '', {});
-        }
+        const title = `🎁 ${user.firstName} העברנו לחשבונך סכום של ${transaction.amount} ש"ח, יאסו!🎁`;
+        await this.messagingService.notify(user, {
+            title,
+            body: `הכסף שנאסף עבורך הועבר לחשבון הבנק שלך. סכום: ${transaction.amount} ש"ח.`,
+            type: 'payment',
+            data: { action: 'money_transferred' },
+        });
+
         return transaction;
     }
 }

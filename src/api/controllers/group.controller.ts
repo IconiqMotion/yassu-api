@@ -121,8 +121,9 @@ export const create = async (req: Request, res: Response) => {
 export const inviteMembersToGroup = async (req: Request, res: Response) => {
 	try {
 		const groupId = req.params.id;
+		const adminUser = req.user as User;
 		const transformed = plainToInstance(InviteMembersDTO, req.body);
-		const result = await groupService.inviteMembersToGroup(+groupId, transformed.membersPhoneNumbers);
+		const result = await groupService.inviteMembersToGroup(+groupId, adminUser, transformed.membersPhoneNumbers);
 		return resService.handleSuccess(res, result);
 	} catch (e) {
 		return resService.handleError(res, new BadRequestError('group.invite.error', e.message, e));

@@ -21,6 +21,7 @@ import { CardcomService } from "./cardcom.service";
 import { NotificationService } from "./notification.service";
 import { HashidsService } from "./hashids.service";
 import { BankAccountService } from "./bank-account.service";
+import { MessagingService } from "./messaging.service";
 import { EWithdrawType } from "../models/bank-account.model";
 import getConfig from "../../config/env.config";
 
@@ -40,7 +41,8 @@ export class EventService {
         private notificationService: NotificationService,
         private authService: AuthService,
         private readonly hashidsService: HashidsService,
-        private bankAccountService: BankAccountService) {
+        private bankAccountService: BankAccountService,
+        private readonly messagingService: MessagingService) {
     }
 
     findOne(id: number) {
@@ -479,7 +481,7 @@ export class EventService {
 
             if (greeting.amountOfMoney > 0) {
                 // create transfer note
-                await this.sendPushToSender(greeting.senderUser as User, group.targetUser as User);
+                await this.sendPushToSender(greeting.senderUser as User, group.targetUser as User, event.id);
                 greeting.finishedProcessing = true;
                 await greeting.save();
             } else {
@@ -489,8 +491,8 @@ export class EventService {
 
         // Send notifications to receiver if there's money involved
         if (totalAmount > 0) {
-            this.sendSmsToReceiver((group.targetUser as User).phone, totalAmount, undefined, event.id);
-            await this.sendPushToReceiver(group.targetUser as User, totalAmount);
+            await this.sendSmsToReceiver((group.targetUser as User).phone, totalAmount, undefined, event.id);
+            await this.sendPushToReceiver(group.targetUser as User, totalAmount, undefined, event.id);
         }
 
         // Update group status
@@ -507,7 +509,7 @@ export class EventService {
             totalAmount += greeting.amountOfMoney;
             if (greeting.amountOfMoney > 0) {
                 // create transfer note
-                await this.sendPushToSender(greeting.senderUser as User, event.receiverUser as User);
+                await this.sendPushToSender(greeting.senderUser as User, event.receiverUser as User, event.id);
                 greeting.finishedProcessing = true;
                 await greeting.save();
             }
@@ -515,10 +517,10 @@ export class EventService {
         if (totalAmount > 0) {
             // Check if there's only one sender
             const uniqueSenders = new Set(unhandledTransactions.map(g => (g.senderUser as User).id));
-            const senderName = uniqueSenders.size === 1 ? (unhandledTransactions[0].senderUser as User).fullName : null;
+            const senderName = uniqueSenders.size === 1 ? (unhandledTransactions[0].senderUser as User).fullName : undefined;
 
-            this.sendSmsToReceiver(event.receiverPhoneNumber, totalAmount, senderName, event.id);
-            await this.sendPushToReceiver(event.receiverUser as User, totalAmount, senderName);
+            await this.sendSmsToReceiver(event.receiverPhoneNumber, totalAmount, senderName, event.id);
+            await this.sendPushToReceiver(event.receiverUser as User, totalAmount, senderName, event.id);
         }
         event.finishedProcessing = true;
         await this.getRepository().save(event);
@@ -610,42 +612,38 @@ export class EventService {
         const message = senderName
             ? `מזל טוב! קיבלת מתנה חדשה מאת ${senderName} באפליקציית יאסו 🎁\nסכום המתנה: ${totalAmount} ש"ח\nלקבל המתנה, היכנס לאפליקציה:\n${link}`
             : `מזל טוב! קיבלת מתנה חדשה באפליקציית יאסו 🎁\nסכום המתנה: ${totalAmount} ש"ח\nלקבל המתנה, היכנס לאפליקציה:\n${link}`;
-        this.smsService.sendSms(receiverPhoneNumber, message);
-        this.smsService.sendWhatsappMessage(receiverPhoneNumber, message);
+        return this.messagingService.notifyPhone(receiverPhoneNumber, message);
     }
 
-    private async sendPushToReceiver(receiverUser: User, totalAmount: number, senderName?: string) {
+    private async sendPushToReceiver(receiverUser: User, totalAmount: number, senderName?: string, eventId?: number) {
         const title = senderName
             ? `${receiverUser.fullName}קיבלת מתנה חדשה מ${senderName} 🎁`
             : `${receiverUser.fullName} קיבלת מתנה חדשה 🎁`;
         const body = 'איזה כיף! היכנסו לאפליקציה כדי לקרוא את הברכות ולקבל את המתנה';
-        if (receiverUser.fcmToken) {
-            await this.pushService.send(receiverUser.fcmToken, title, body, {});
-        }
-        // create notification
-        const notificationData = {
+        // WhatsApp/SMS are skipped here on purpose: sendSmsToReceiver already covers those
+        // channels for the same recipient in the same flow.
+        await this.messagingService.notify(receiverUser, {
             title,
-            message: body,
+            body,
             type: 'greeting',
-            userId: receiverUser.id,
-        }
-        await this.notificationService.createNotification(notificationData);
+            entityType: eventId ? 'event' : undefined,
+            entityId: eventId,
+            data: eventId ? { eventId: String(eventId), action: 'gift_received' } : {},
+            channels: { whatsapp: false, sms: false },
+        });
     }
 
-    private async sendPushToSender(senderUser: User, receiverUser: User) {
+    private async sendPushToSender(senderUser: User, receiverUser: User, eventId?: number) {
         const title = `${senderUser.fullName}, המתנה שלך הגיעה ל${receiverUser.fullName} 🎁`;
         const body = `איזה כיף! המתנה ששלחת הגיעה ל${receiverUser.fullName}`;
-        if (senderUser.fcmToken) {
-            await this.pushService.send(senderUser.fcmToken, title, body, {});
-        }
-        // create notification
-        const notificationData = {
+        await this.messagingService.notify(senderUser, {
             title,
-            message: body,
+            body,
             type: 'greeting',
-            userId: senderUser.id,
-        }
-        await this.notificationService.createNotification(notificationData);
+            entityType: eventId ? 'event' : undefined,
+            entityId: eventId,
+            data: eventId ? { eventId: String(eventId), action: 'gift_delivered' } : {},
+        });
     }
 
     async notifyThanks(user: User, eventId: string) {
@@ -653,18 +651,17 @@ export class EventService {
         if (!event) {
             return;
         }
-        // iterate over greetings and send sms to each sender
+        // notify each sender that the recipient received their gift
         for (const greeting of event.greetings) {
-            this.smsService.sendSms((greeting.senderUser as User).phone, `${user.fullName} קיבל את המתנה ששלחת לו באפליקציית יאסו. תודה רבה!`);
-            this.smsService.sendWhatsappMessage((greeting.senderUser as User).phone, `${user.fullName} קיבל את המתנה ששלחת לו באפליקציית יאסו. תודה רבה!`);
-            // create notification for sender
-            const notificationData = {
+            await this.messagingService.notify(greeting.senderUser as User, {
                 title: `${user.fullName} קיבל את המתנה שלך 🎁`,
-                message: `תודה על המתנה ששלחת ל${user.fullName}`,
+                body: `תודה על המתנה ששלחת ל${user.fullName}`,
+                text: `${user.fullName} קיבל את המתנה ששלחת לו באפליקציית יאסו. תודה רבה!`,
                 type: 'greeting',
-                userId: (greeting.senderUser as User).id,
-            };
-            await this.notificationService.createNotification(notificationData);
+                entityType: 'event',
+                entityId: event.id,
+                data: { eventId: String(event.id), action: 'gift_thanks' },
+            });
         }
         event.notified = true;
         await event.save();
@@ -777,8 +774,7 @@ export class EventService {
 
         const message = `היי ${sender}! ${actionText}. חברך יקבל את המתנה בתאריך המועד שבחרת. תודה שהשתמשת באפליקציה שלנו`;
 
-        this.smsService.sendSms(senderPhone, message);
-        this.smsService.sendWhatsappMessage(senderPhone, message);
+        return this.messagingService.notifyPhone(senderPhone, message);
     }
 
     private async notifyAdminsOnTransaction(senderUser: User, receiverUser: {

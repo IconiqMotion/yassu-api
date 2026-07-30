@@ -28,9 +28,11 @@ export const register = async (req: Request, res: Response) => {
 		await authService.register(transformed);
 		return resService.handleSuccess(res, { phone: transformed.phone });
 	} catch (e) {
+		// keep the specific code (e.g. ERR_SMS_SEND_FAILED) so the app can tell the user the
+		// code never went out, instead of dropping them on the "enter the code" screen
 		return resService.handleError(res, new BadRequestError(
-			'general.error',
-			'err',
+			e?.errorMsgCode || 'general.error',
+			e?.logMessage || 'err',
 			e
 		));
 	}

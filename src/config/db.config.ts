@@ -12,10 +12,21 @@ const bootstrapDb = async () => {
 	}
 
 	if (conn) {
-		try {
-			await conn.query('ALTER TABLE "credit_card_request" ADD COLUMN IF NOT EXISTS "lowProfileId" varchar');
-		} catch (e) {
-			Logger.error(`Failed to ensure lowProfileId column: ${e.message}`);
+		// Additive, idempotent column guards. synchronize is off in production, so new nullable
+		// columns are ensured here instead.
+		const columnGuards = [
+			'ALTER TABLE "credit_card_request" ADD COLUMN IF NOT EXISTS "lowProfileId" varchar',
+			// Lets the app navigate to whatever a notification is about when it is tapped.
+			'ALTER TABLE "notification" ADD COLUMN IF NOT EXISTS "entityType" varchar',
+			'ALTER TABLE "notification" ADD COLUMN IF NOT EXISTS "entityId" integer',
+		];
+
+		for (const statement of columnGuards) {
+			try {
+				await conn.query(statement);
+			} catch (e) {
+				Logger.error(`Failed to ensure column: ${statement} - ${e.message}`);
+			}
 		}
 	}
 

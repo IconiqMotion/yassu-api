@@ -51,12 +51,16 @@ export class NotificationService {
         message: string;
         type: string;
         userId: number;
+        entityType?: string;
+        entityId?: number;
     }): Promise<Notification> {
         const notification = this.getRepository().create({
             title: data.title,
             message: data.message,
             type: data.type,
             userId: data.userId,
+            entityType: data.entityType,
+            entityId: data.entityId,
             isRead: false
         });
 

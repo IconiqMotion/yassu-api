@@ -114,8 +114,10 @@ export const getFixedValue = (num: number, precision = 0.2) => {
  * @param phone - phone number to check
  * @returns {boolean}
  */
+export const ISRAEL_MOBILE_REGEX = /^\+?(972|0)?(\-)?([5]{1}\d{8})$/;
+
 export const isValidPhone = (phone: string) => {
-	return /^\+?(972|0)?(\-)?([5]{1}\d{8})$/.test(phone);
+	return ISRAEL_MOBILE_REGEX.test(phone);
 };
 
 export function DateTransform(value) {

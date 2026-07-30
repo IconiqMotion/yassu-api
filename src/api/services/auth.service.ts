@@ -50,9 +50,18 @@ export class AuthService {
 		await this.getRepository().delete({ phone });
 		// send sms message with the code
 		await this.getRepository().create({ phone, verificationCode }).save();
-		const prefix = '', msg = `${prefix} ${verificationCode}`;
-		if (getConfig().smsAuth.isEnable) {
-			await this.smsService.sendSms(phone, msg);
+		// Plain hebrew text carrying the brand name. A body of bare digits identifies no sender
+		// and does not survive the way to the handset. Keep it free of <#>, @domain and #hash -
+		// sms4free rejects those outright (see iconiq-server 738eb082).
+		const msg = `Yassu: קוד האימות שלך הוא ${verificationCode}. הקוד תקף ל-10 דקות.`;
+		if (!getConfig().smsAuth.isEnable) {
+			return true;
+		}
+		const result = await this.smsService.sendSms(phone, msg);
+		if (!result.ok) {
+			// surface it - answering success here leaves the app on the "enter the code" screen
+			// waiting for an sms that was never sent
+			throw new BadRequestError('ERR_SMS_SEND_FAILED', `sms send failed for ${phone}: ${result.reason}`);
 		}
 		return true;
 	}
@@ -135,11 +144,9 @@ export class AuthService {
 		const phone = parsePhone(transformed.phone);
 		const verification = await this.validateToken(phone, transformed.verificationCode);
 
-		if (verification || transformed.verificationCode == '123456') {
+		if (verification) {
 			// Delete the verification code after successful verification to prevent reuse
-			if (verification) {
-				await this.getRepository().remove(verification);
-			}
+			await this.getRepository().remove(verification);
 			const userCreation = await this.usersService.getOrCreateByPhone(phone, {});
 			const jwt = this.createJWT({ id: userCreation.user.id });
 			return { user: userCreation.user, jwt };

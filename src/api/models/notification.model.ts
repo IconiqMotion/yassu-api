@@ -14,6 +14,16 @@ export class Notification extends MainEntity {
 	@Column({ nullable: false })
 	type: string;
 
+	/**
+	 * What the notification points at, so the app can navigate when it is tapped.
+	 * e.g. entityType 'group' + entityId 42 -> /group/42
+	 */
+	@Column({ nullable: true })
+	entityType: string;
+
+	@Column({ nullable: true })
+	entityId: number;
+
 	@Column({ default: false })
 	isRead: boolean;
 

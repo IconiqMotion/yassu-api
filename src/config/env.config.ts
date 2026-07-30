@@ -85,6 +85,7 @@ export interface IConfig {
 	greenApi: {
 		instanceId: string;
 		token: string;
+		baseUrl?: string;
 	},
 	smsAuth: {
 		key: string;
@@ -209,11 +210,23 @@ const init = () => {
 	if (process.env.SMS_KEY) (config.smsAuth = config.smsAuth || {}).key = process.env.SMS_KEY;
 	if (process.env.SMS_TOKEN) (config.smsAuth = config.smsAuth || {}).token = process.env.SMS_TOKEN;
 
+	// WhatsApp (Green API) — the official business number's instance. Kept as env vars so the
+	// number can be swapped from Heroku config vars without redeploying CONFIG_JSON.
+	if (process.env.GREEN_API_INSTANCE_ID || process.env.GREEN_API_TOKEN || process.env.GREEN_API_BASE_URL) {
+		config.greenApi = {
+			instanceId: process.env.GREEN_API_INSTANCE_ID || config.greenApi?.instanceId,
+			token: process.env.GREEN_API_TOKEN || config.greenApi?.token,
+			baseUrl: process.env.GREEN_API_BASE_URL || config.greenApi?.baseUrl,
+		};
+	}
+
 	// sms4free
 	if (process.env.SMS4FREE_KEY) (config.smsAuth = config.smsAuth || {}).sms4freeKey = process.env.SMS4FREE_KEY;
 	if (process.env.SMS4FREE_USER) (config.smsAuth = config.smsAuth || {}).sms4freeUser = process.env.SMS4FREE_USER;
 	if (process.env.SMS4FREE_PASS) (config.smsAuth = config.smsAuth || {}).sms4freePass = process.env.SMS4FREE_PASS;
 	if (process.env.SMS4FREE_SENDER) (config.smsAuth = config.smsAuth || {}).senderName = process.env.SMS4FREE_SENDER;
+	// the master switch used to live only inside CONFIG_JSON, where it is easy to drop by accident
+	if (process.env.SMS4FREE_ENABLE) (config.smsAuth = config.smsAuth || {}).isEnable = process.env.SMS4FREE_ENABLE === 'true';
 
 	return Object.assign(config, constants);
 };

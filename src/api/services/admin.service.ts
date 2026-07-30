@@ -16,6 +16,7 @@ import { AdminListGroupsDTO } from '../dto/admin/admin-list-groups.dto';
 import { AdminUpdateEventDTO } from '../dto/admin/admin-update-event.dto';
 import { PushService } from './push.service';
 import { NotificationService } from './notification.service';
+import { MessagingService } from './messaging.service';
 
 @Service()
 export class AdminService {
@@ -28,7 +29,8 @@ export class AdminService {
 
     constructor(
         private pushService: PushService,
-        private notificationService: NotificationService
+        private notificationService: NotificationService,
+        private readonly messagingService: MessagingService
     ) {}
 
     // Repository getters
@@ -870,23 +872,15 @@ export class AdminService {
             await this.getInternalTransactionRepository().save(event.internalTransaction);
         }
 
-        // Send push notification to receiver
-        const receiverUser = event.receiverUser as User;
-        if (receiverUser && receiverUser.fcmToken) {
-            const title = 'הכסף הועבר אליך! 🎉';
-            const body = `סכום של ${dto.amount} ש"ח הועבר לחשבונך. מספר אסמכתא: ${dto.reference}`;
-            await this.pushService.send(receiverUser.fcmToken, title, body, {});
-        }
-
-        // Create notification
-        if (receiverUser) {
-            await this.notificationService.createNotification({
-                title: 'הכסף הועבר אליך! 🎉',
-                message: `סכום של ${dto.amount} ש"ח הועבר לחשבונך. מספר אסמכתא: ${dto.reference}`,
-                type: 'payment',
-                userId: receiverUser.id
-            });
-        }
+        // Notify the receiver over every channel
+        await this.messagingService.notify(event.receiverUser as User, {
+            title: 'הכסף הועבר אליך! 🎉',
+            body: `סכום של ${dto.amount} ש"ח הועבר לחשבונך. מספר אסמכתא: ${dto.reference}`,
+            type: 'payment',
+            entityType: 'event',
+            entityId: eventId,
+            data: { eventId: String(eventId), action: 'money_transferred' },
+        });
 
         return this.getEventById(eventId);
     }
@@ -914,23 +908,13 @@ export class AdminService {
             await this.getEventRepository().save(transaction.event);
         }
 
-        // Send push notification to receiver
-        const receiverUser = transaction.receiverUser as User;
-        if (receiverUser && receiverUser.fcmToken) {
-            const title = 'הכסף הועבר אליך! 🎉';
-            const body = `סכום של ${dto.amount} ש"ח הועבר לחשבונך. מספר אסמכתא: ${dto.reference}`;
-            await this.pushService.send(receiverUser.fcmToken, title, body, {});
-        }
-
-        // Create notification
-        if (receiverUser) {
-            await this.notificationService.createNotification({
-                title: 'הכסף הועבר אליך! 🎉',
-                message: `סכום של ${dto.amount} ש"ח הועבר לחשבונך. מספר אסמכתא: ${dto.reference}`,
-                type: 'payment',
-                userId: receiverUser.id
-            });
-        }
+        // Notify the receiver over every channel
+        await this.messagingService.notify(transaction.receiverUser as User, {
+            title: 'הכסף הועבר אליך! 🎉',
+            body: `סכום של ${dto.amount} ש"ח הועבר לחשבונך. מספר אסמכתא: ${dto.reference}`,
+            type: 'payment',
+            data: { action: 'money_transferred' },
+        });
 
         return this.getInternalTransactionById(transactionId);
     }
