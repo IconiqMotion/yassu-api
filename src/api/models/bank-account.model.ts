@@ -18,7 +18,7 @@ export class BankAccount extends MainEntity {
     @Column({ type: 'enum', enum: EWithdrawType })
     withdrawType: EWithdrawType;
 
-    // For BIT jj
+    // For BIT
     @Column({ nullable: true })
     bitPhoneNumber: string;
 
